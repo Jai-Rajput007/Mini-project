@@ -1,0 +1,32 @@
+{
+  "report_id": "ca4d6dd1-168d-492b-8850-ca82927a01b1",
+  "scan_id": "test-scan-123",
+  "url": "http://example.com",
+  "timestamp": "2025-04-01T18:53:54.611563",
+  "scan_timestamp": "2023-01-01T12:00:00",
+  "scan_duration": 10.5,
+  "scanners_used": [
+    "sql_injection",
+    "xss"
+  ],
+  "vulnerabilities_count": 7,
+  "summary": {
+    "critical": 1,
+    "high": 2,
+    "medium": 3,
+    "low": 1,
+    "info": 0
+  },
+  "status": "completed",
+  "findings": [
+    {
+      "id": "vuln-123",
+      "name": "Test SQL Injection",
+      "description": "This is a test vulnerability",
+      "severity": "critical",
+      "location": "http://example.com/test?id=1",
+      "evidence": "Error message: SQL syntax error",
+      "remediation": "Use parameterized queries"
+    }
+  ]
+}

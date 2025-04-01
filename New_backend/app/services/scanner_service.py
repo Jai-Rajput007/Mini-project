@@ -7,13 +7,13 @@ from datetime import datetime
 from typing import Dict, List, Any, Optional, Set
 
 from ..models.scan import ScanRequest, ScanResponse, ScanResult, ScanStatus, ScannerType
-from ..db.database import save_to_db, update_in_db, find_document, find_documents
-from .xss_scanner import XSSScanner
+from ..db.database import save_to_db, update_in_db, find_document, find_documents, connect_to_mongo
 from .enhanced_sql_scanner import EnhancedSQLScanner
 from .enhanced_http_scanner import EnhancedHTTPScanner
 from .enhanced_file_upload_scanner import EnhancedFileUploadScanner
 from .basic_scanner import BasicScanner
 from .enhanced_xss_scanner import EnhancedXSSScanner
+from .report_service import ReportService
 
 class ScannerService:
     """
@@ -25,6 +25,18 @@ class ScannerService:
     
     # Cache directory for scans if not using MongoDB
     _cache_dir: str = os.path.join(os.path.dirname(os.path.dirname(__file__)), "cache")
+    
+    @classmethod
+    async def initialize(cls):
+        """Initialize the scanner service."""
+        # Initialize storage
+        cls._init_storage()
+        
+        # Connect to MongoDB
+        await connect_to_mongo()
+        
+        # Initialize report service
+        await ReportService.initialize()
     
     @classmethod
     async def start_scan(cls, scan_request: ScanRequest) -> ScanResponse:
@@ -48,7 +60,6 @@ class ScannerService:
         if ScannerType.ALL in scanners_to_use:
             scanners_to_use = [
                 ScannerType.BASIC,
-                ScannerType.XSS,
                 ScannerType.SQL_INJECTION,
                 ScannerType.HTTP_METHODS,
                 ScannerType.FILE_UPLOAD
@@ -111,7 +122,6 @@ class ScannerService:
         if ScannerType.ALL in scanners_to_use:
             scanners_to_use = [
                 ScannerType.BASIC,
-                ScannerType.XSS,
                 ScannerType.SQL_INJECTION,
                 ScannerType.HTTP_METHODS,
                 ScannerType.FILE_UPLOAD
@@ -127,14 +137,6 @@ class ScannerService:
                 basic_scanner = BasicScanner()
                 basic_vulns = await basic_scanner.scan_url(url)
                 all_vulnerabilities.extend(basic_vulns)
-                cls._update_completed_scanners(scan_id, 1)
-            
-            # Run XSS scanner if requested
-            if ScannerType.XSS in scanners_to_use:
-                cls._update_scan_message(scan_id, "Running Enhanced XSS scanner...")
-                xss_scanner = EnhancedXSSScanner()
-                xss_vulns = await xss_scanner.scan_url(url)
-                all_vulnerabilities.extend(xss_vulns)
                 cls._update_completed_scanners(scan_id, 1)
             
             # Run SQL Injection scanner if requested
@@ -180,13 +182,18 @@ class ScannerService:
                 cls._save_result_to_file(result_dict)
                 result_id = scan_id
             
+            # Save report to MongoDB using report service
+            scan_data = cls._active_scans.get(scan_id, {"scan_id": scan_id, "url": url})
+            report_id = await ReportService.save_report(scan_data, result_dict)
+            
             # Update scan status to completed
             cls._update_scan_status(
                 scan_id, 
                 ScanStatus.COMPLETED, 
                 progress=100, 
                 message=f"Scan completed. Found {len(all_vulnerabilities)} vulnerabilities.",
-                result_id=result_id
+                result_id=result_id,
+                report_id=report_id
             )
             
         except Exception as e:
@@ -395,7 +402,7 @@ class ScannerService:
         if not scan:
             return None
         
-        return ScanResponse(
+        response = ScanResponse(
             scan_id=scan["scan_id"],
             url=scan["url"],
             status=ScanStatus(scan["status"]),
@@ -403,8 +410,11 @@ class ScannerService:
             scanners_used=scan["scanners_used"],
             progress=scan.get("progress", 0),
             message=scan.get("message"),
-            result_id=scan.get("result_id")
+            result_id=scan.get("result_id"),
+            report_id=scan.get("report_id")
         )
+        
+        return response
     
     @staticmethod
     async def get_scan_result(scan_id: str) -> Optional[ScanResult]:
@@ -453,7 +463,8 @@ class ScannerService:
                 scanners_used=scan["scanners_used"],
                 progress=scan.get("progress", 0),
                 message=scan.get("message"),
-                result_id=scan.get("result_id")
+                result_id=scan.get("result_id"),
+                report_id=scan.get("report_id")
             ))
         
         return scan_responses
@@ -535,3 +546,17 @@ class ScannerService:
             combined_result.findings.append(vuln)
         
         return combined_result 
+    
+    @staticmethod
+    async def export_report(report_id: str, format_type: str = "json") -> Optional[str]:
+        """
+        Export a report to the specified format.
+        
+        Args:
+            report_id: The ID of the report
+            format_type: The format to export to (pdf, json, txt)
+            
+        Returns:
+            Optional[str]: The path to the exported file
+        """
+        return await ReportService.export_report(report_id, format_type) 

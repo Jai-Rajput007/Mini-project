@@ -91,4 +91,5 @@ class ScanResponse(BaseModel):
     scanners_used: List[str]
     progress: int = 0  # 0-100%
     message: Optional[str] = None
-    result_id: Optional[str] = None 
+    result_id: Optional[str] = None
+    report_id: Optional[str] = None 

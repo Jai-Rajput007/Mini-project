@@ -7,4 +7,6 @@ python-multipart>=0.0.5
 pydantic>=1.9.0
 python-dotenv>=0.19.1
 scikit-learn>=1.0.2
-numpy>=1.22.0 
+numpy>=1.22.0
+reportlab>=3.6.12
+dnspython>=2.3.0 

@@ -1,0 +1,34 @@
+================================================================================
+VULNERABILITY SCAN REPORT
+================================================================================
+
+Report ID: ca4d6dd1-168d-492b-8850-ca82927a01b1
+Scan ID: test-scan-123
+URL: http://example.com
+Timestamp: 2025-04-01T18:53:54.611563
+Scan Duration: 10.50 seconds
+Scanners Used: sql_injection, xss
+
+--------------------------------------------------------------------------------
+SUMMARY
+--------------------------------------------------------------------------------
+Critical: 1
+High: 2
+Medium: 3
+Low: 1
+Info: 0
+Total: 7
+
+--------------------------------------------------------------------------------
+FINDINGS
+--------------------------------------------------------------------------------
+
+Finding #1: Test SQL Injection
+Severity: critical
+Location: http://example.com/test?id=1
+Description: This is a test vulnerability
+Evidence: Error message: SQL syntax error
+Remediation: Use parameterized queries
+
+----------------------------------------
+

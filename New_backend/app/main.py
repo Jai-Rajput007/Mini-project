@@ -28,16 +28,22 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_db_client():
     try:
+        # Connect to MongoDB
         db = await connect_to_mongo()
         if not db:
             print("WARNING: Failed to connect to MongoDB. Using in-memory database.")
         else:
             print("Successfully connected to MongoDB.")
         
+        # Get database instance
         db_instance = get_db()
         print("Database initialized successfully.")
+        
+        # Initialize scanner service
+        from .services.scanner_service import ScannerService
+        await ScannerService.initialize()
     except Exception as e:
-        print(f"WARNING: Database initialization issue: {e}")
+        print(f"WARNING: Initialization issue: {e}")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
@@ -69,10 +75,18 @@ async def root():
         "docs": "/docs",
         "redoc": "/redoc",
         "endpoints": {
-            "start_scan": "/api/v1/scanner/start",
-            "get_scan_status": "/api/v1/scanner/{scan_id}",
-            "get_scan_result": "/api/v1/scanner/{scan_id}/result",
-            "get_scanner_info": "/api/v1/scanner/scanner-info"
+            "scanner": {
+                "start_scan": "/api/v1/scanner/start",
+                "get_scan_status": "/api/v1/scanner/{scan_id}",
+                "get_scan_result": "/api/v1/scanner/{scan_id}/result",
+                "get_scanner_info": "/api/v1/scanner/scanner-info"
+            },
+            "reports": {
+                "get_report": "/api/v1/reports/{report_id}",
+                "export_report": "/api/v1/reports/{report_id}/export/{format_type}",
+                "list_reports": "/api/v1/reports/list",
+                "delete_report": "/api/v1/reports/{report_id}"
+            }
         }
     }
 
