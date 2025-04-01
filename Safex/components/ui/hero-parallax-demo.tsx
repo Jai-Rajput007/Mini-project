@@ -8,93 +8,93 @@ export default function HeroParallaxDemo() {
 
 export const products = [
   {
-    title: "Moonbeam",
-    link: "https://gomoonbeam.com",
+    title: "Data Breaches",
+    link: "https://www.ftc.gov/business-guidance/resources/data-breach-response-guide-business",
     thumbnail:
-      "https://aceternity.com/images/products/thumbnails/new/moonbeam.png",
+      "/7.jpg",
   },
   {
-    title: "Cursor",
-    link: "https://cursor.so",
+    title: "Cybersecurity Attacks",
+    link: "https://thehackernews.com/",
     thumbnail:
-      "https://aceternity.com/images/products/thumbnails/new/cursor.png",
+      "/2.png",
   },
   {
-    title: "JAi",
-    link: "https://userogue.com",
+    title: "Ransomeware Attacks",
+    link: "https://cybersecurityventures.com/ransomware-report/",
     thumbnail:
       "/Ransomeware.jpg",
   },
   {
-    title: "Editorially",
-    link: "https://editorially.org",
+    title: "Statistics",
+    link: "https://www.embroker.com/blog/cyber-attack-statistics/",
     thumbnail:
-      "https://aceternity.com/images/products/thumbnails/new/editorially.png",
+      "/3.jpg",
   },
   {
-    title: "Editrix AI",
-    link: "https://editrix.ai",
+    title: "Cyber Incidents",
+    link: "https://blog.checkpoint.com/research/a-closer-look-at-q3-2024-75-surge-in-cyber-attacks-worldwide/",
     thumbnail:
-      "https://aceternity.com/images/products/thumbnails/new/editrix.png",
+      "/4.png",
   },
   {
-    title: "Pixel Perfect",
-    link: "https://app.pixelperfect.quest",
+    title: "Employement",
+    link: "https://www.techtarget.com/whatis/feature/5-top-cybersecurity-careers",
     thumbnail:
-      "https://aceternity.com/images/products/thumbnails/new/pixelperfect.png",
+      "/5.jpg",
   },
   {
-    title: "Algochurn",
-    link: "https://algochurn.com",
+    title: "Medusa",
+    link: "https://www.tripwire.com/state-of-security/medusa-ransomware-what-you-need-know",
     thumbnail:
-      "https://aceternity.com/images/products/thumbnails/new/algochurn.png",
+      "/6.png",
   },
   {
-    title: "Aceternity UI",
-    link: "https://ui.aceternity.com",
+    title: "Recent Attacks",
+    link: "https://www.csis.org/programs/strategic-technologies-program/significant-cyber-incidents",
     thumbnail:
-      "https://aceternity.com/images/products/thumbnails/new/aceternityui.png",
+      "/1.png",
   },
   {
-    title: "Tailwind Master Kit",
-    link: "https://tailwindmasterkit.com",
+    title: "Threats",
+    link: "https://nordlayer.com/blog/futurespective-2033-cyberthreats/",
     thumbnail:
-      "https://aceternity.com/images/products/thumbnails/new/tailwindmasterkit.png",
+      "/8.jpg",
   },
   {
-    title: "SmartBridge",
-    link: "https://smartbridgetech.com",
+    title: "Common Cyber Attacks",
+    link: "https://www.simplilearn.com/tutorials/cyber-security-tutorial/types-of-cyber-attacks",
     thumbnail:
-      "https://aceternity.com/images/products/thumbnails/new/smartbridge.png",
+      "/9.png",
   },
   {
-    title: "Renderwork Studio",
-    link: "https://renderwork.studio",
+    title: "Sectors Affected",
+    link: "https://www.eccu.edu/blog/cybersecurity/top-industries-most-vulnerable-to-cyber-attacks/",
     thumbnail:
-      "https://aceternity.com/images/products/thumbnails/new/renderwork.png",
+      "/10.jpg",
   },
   {
-    title: "Creme Digital",
-    link: "https://cremedigital.com",
+    title: "Countries",
+    link: "https://mixmode.ai/blog/global-cybercrime-report-2024-which-countries-face-the-highest-risk/",
     thumbnail:
-      "https://aceternity.com/images/products/thumbnails/new/cremedigital.png",
+      "/11.png",
   },
   {
-    title: "Golden Bells Academy",
-    link: "https://goldenbellsacademy.com",
+    title: "Types of cyber attacks",
+    link: "https://www.fortinet.com/resources/cyberglossary/types-of-cyber-attacks",
     thumbnail:
-      "https://aceternity.com/images/products/thumbnails/new/goldenbellsacademy.png",
+      "/12.png",
   },
   {
-    title: "Invoker Labs",
-    link: "https://invoker.lol",
+    title: "Protection against Ransomware",
+    link: "https://www.cisa.gov/stopransomware/how-can-i-protect-against-ransomware",
     thumbnail:
-      "https://aceternity.com/images/products/thumbnails/new/invoker.png",
+      "/15.jpg",
   },
   {
-    title: "E Free Invoice",
-    link: "https://efreeinvoice.com",
+    title: "Phishing",
+    link: "https://www.ncsc.gov.uk/guidance/phishing",
     thumbnail:
-      "https://aceternity.com/images/products/thumbnails/new/efreeinvoice.png",
+      "/14.jpg",
   },
 ];

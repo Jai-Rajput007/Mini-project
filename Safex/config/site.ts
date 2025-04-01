@@ -59,7 +59,7 @@ export const siteConfig = {
     github: "https://github.com/Jai-Rajput007/Jai-Singh-Rajput",
     linkedin: "https://www.linkedin.com/in/j-s-rajput/",
     docs: "https://heroui.com",
-    discord: "https://discord.gg/9b6yyZKmH4",
+    discord: "https://discord.com/channels/@me",
     sponsor: "https://patreon.com/jrgarciadev",
   },
 };

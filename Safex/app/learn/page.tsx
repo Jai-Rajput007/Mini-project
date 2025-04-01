@@ -54,7 +54,7 @@ export default function LearnPage() {
             Learning Modules
           </h1>
           <p className="mt-4 text-gray-400">
-            Explore our guides and documentation to master Safex features
+            Explore our info-cards and documentation to enhance your knowledge.
           </p>
         </motion.div>
       </LampContainer>
