@@ -1,0 +1,157 @@
+/**
+ * Safex Theme Safeguard
+ * 
+ * This file preserves the original theme colors and variables
+ * even if tailwind.config.js is modified by third-party packages.
+ * 
+ * Import this file in your globals.css to ensure theme consistency.
+ */
+
+:root {
+  /* Base colors */
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+
+  /* Card colors */
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+
+  /* Popover colors */
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+
+  /* Primary colors */
+  --primary: 221.2 83.2% 53.3%;
+  --primary-foreground: 210 40% 98%;
+
+  /* Secondary colors */
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+
+  /* Muted colors */
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+
+  /* Accent colors */
+  --accent: 262.1 83.3% 57.8%;
+  --accent-foreground: 210 40% 98%;
+
+  /* Destructive colors */
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+
+  /* Border, input, and ring colors */
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 221.2 83.2% 53.3%;
+
+  /* Border radius */
+  --radius: 0.5rem;
+
+  /* Chart colors */
+  --chart-1: 221.2 83.2% 53.3%;
+  --chart-2: 262.1 83.3% 57.8%;
+  --chart-3: 291.1 92.5% 72.9%;
+  --chart-4: 0 84.2% 60.2%;
+  --chart-5: 43.3 96.4% 56.3%;
+}
+
+.dark {
+  /* Base colors */
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+
+  /* Card colors */
+  --card: 222.2 84% 4.9%;
+  --card-foreground: 210 40% 98%;
+
+  /* Popover colors */
+  --popover: 222.2 84% 4.9%;
+  --popover-foreground: 210 40% 98%;
+
+  /* Primary colors */
+  --primary: 217.2 91.2% 59.8%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+
+  /* Secondary colors */
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+
+  /* Muted colors */
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+
+  /* Accent colors */
+  --accent: 262.1 83.3% 57.8%;
+  --accent-foreground: 210 40% 98%;
+
+  /* Destructive colors */
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+
+  /* Border, input, and ring colors */
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 224.3 76.3% 48%;
+
+  /* Chart colors */
+  --chart-1: 217.2 91.2% 59.8%;
+  --chart-2: 262.1 83.3% 57.8%;
+  --chart-3: 291.1 92.5% 72.9%;
+  --chart-4: 0 84.2% 60.2%;
+  --chart-5: 43.3 96.4% 56.3%;
+}
+
+/* Safex specific colors - add any custom colors here */
+:root {
+  --safex-dark-bg: #020817;
+  --safex-text-light: #1e293b; /* Dark text color (matches #ECEDEE) */
+  --safex-text-dark: #ffffff; /* Light text color */
+  --safex-muted-light: #64748b; /* Muted dark text */
+  --safex-muted-dark: #94a3b8; /* Muted light text */
+}
+
+/* Helper classes for specific Safex components */
+.safex-feature-dark {
+  background-color: var(--safex-dark-bg);
+}
+
+.safex-feature-light {
+  background-color: white;
+}
+
+.safex-feature-divider {
+  background-color: hsl(var(--border));
+}
+
+.safex-feature-handle {
+  background-color: hsl(var(--background));
+  border-color: hsl(var(--border));
+}
+
+/* Text color classes for light/dark sections */
+.safex-feature-text-light {
+  color: var(--safex-text-light);
+}
+
+.safex-feature-text-dark {
+  color: var(--safex-text-dark);
+}
+
+.safex-feature-muted-text-light {
+  color: var(--safex-muted-light);
+}
+
+.safex-feature-muted-text-dark {
+  color: var(--safex-muted-dark);
+}
+
+.safex-feature-badge-light {
+  background-color: hsl(var(--secondary) / 0.3);
+  color: hsl(var(--secondary-foreground));
+}
+
+.safex-feature-badge-dark {
+  background-color: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+}

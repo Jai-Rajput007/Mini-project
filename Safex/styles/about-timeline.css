@@ -1,0 +1,63 @@
+/* About page timeline styling */
+
+.timeline-dot {
+  transition: all 0.3s ease;
+}
+
+.timeline-dot.active {
+  background-color: hsl(var(--primary));
+  border-color: hsl(var(--primary));
+  transform: scale(1.25);
+}
+
+.timeline-label {
+  transition: color 0.3s ease;
+}
+
+.timeline-label.active {
+  color: hsl(var(--primary));
+}
+
+/* Content animations */
+.content-block {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.content-block.animated {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Section styling */
+.section-heading {
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+.section-heading.animated {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .timeline-label {
+    display: none;
+  }
+  
+  .timeline-dot {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+/* Ensure smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Ensure proper spacing for scroll targets */
+section[id] {
+  scroll-margin-top: 80px;
+} 
