@@ -57,7 +57,7 @@ class BasicScanner:
     
     async def scan_url(self, url: str) -> List[Dict[str, Any]]:
         """
-        Scan a URL for basic security vulnerabilities.
+        Scan a URL for basic vulnerabilities.
         
         Args:
             url: The URL to scan
@@ -66,24 +66,44 @@ class BasicScanner:
             List[Dict[str, Any]]: List of vulnerabilities found
         """
         print(f"Starting basic security scan for URL: {url}")
-        
         vulnerabilities = []
         
-        # Analyze HTTP headers
-        header_vulns = await self._analyze_http_headers(url)
-        vulnerabilities.extend(header_vulns)
-        
-        # Parse the URL to get the hostname
-        parsed_url = urlparse(url)
-        hostname = parsed_url.netloc
-        if ':' in hostname:
-            hostname = hostname.split(':')[0]
-        
-        # Scan common ports
-        port_vulns = await self._scan_ports(hostname)
-        vulnerabilities.extend(port_vulns)
-        
-        return vulnerabilities
+        try:
+            # Check HTTP headers
+            print(f"Analyzing HTTP headers for {url}")
+            try:
+                header_vulns = await self._analyze_http_headers(url)
+                vulnerabilities.extend(header_vulns)
+            except Exception as e:
+                print(f"Error analyzing HTTP headers: {str(e)}")
+            
+            # Extract hostname for port scanning
+            parsed_url = urlparse(url)
+            hostname = parsed_url.netloc.split(':')[0]
+            print(f"Resolved {hostname} to {socket.gethostbyname(hostname)}")
+            
+            # Scan ports
+            try:
+                port_vulns = await self._scan_ports(hostname)
+                vulnerabilities.extend(port_vulns)
+            except Exception as e:
+                print(f"Error scanning ports: {str(e)}")
+            
+            return vulnerabilities
+            
+        except Exception as e:
+            print(f"Error during basic scan: {str(e)}")
+            # Add a connectivity/basic issue vulnerability
+            vulnerabilities.append({
+                "id": str(uuid.uuid4()),
+                "name": "Connection Issue",
+                "description": f"Unable to properly scan the target: {str(e)}",
+                "severity": "info",
+                "location": url,
+                "evidence": str(e),
+                "remediation": "Verify the URL is correct and the target is accessible"
+            })
+            return vulnerabilities
     
     async def _analyze_http_headers(self, url: str) -> List[Dict[str, Any]]:
         """

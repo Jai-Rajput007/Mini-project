@@ -5,6 +5,7 @@ import datetime
 from typing import Dict, Any, List, Optional, Union
 import asyncio
 from pathlib import Path
+import aiofiles
 
 # For PDF generation
 try:
@@ -476,4 +477,60 @@ class ReportService:
             
         except Exception as e:
             print(f"Error creating PDF report: {e}")
-            return None 
+            return None
+    
+    @classmethod
+    async def generate_report(cls, scan_id: str) -> Optional[str]:
+        """
+        Generate a report for a scan.
+        
+        Args:
+            scan_id: The ID of the scan
+            
+        Returns:
+            Optional[str]: The ID of the generated report if successful, None otherwise
+        """
+        # Get scan data directly from database to avoid circular imports
+        scan_data = await find_document("scans", {"scan_id": scan_id})
+        if not scan_data:
+            print(f"Scan with ID {scan_id} not found")
+            return None
+            
+        # Get scan result directly from database
+        result_data = await find_document("scan_results", {"scan_id": scan_id})
+        if not result_data:
+            print(f"Result for scan with ID {scan_id} not found")
+            return None
+            
+        # Create report
+        report_id = str(uuid.uuid4())
+        timestamp = datetime.datetime.now().isoformat()
+        
+        # Basic report structure
+        report = {
+            "report_id": report_id,
+            "scan_id": scan_id,
+            "timestamp": timestamp,
+            "title": f"Security Scan Report for {scan_data.get('url', 'Unknown URL')}",
+            "summary": result_data.get("summary", {}),
+            "findings": result_data.get("findings", []),
+            "recommendations": []
+        }
+        
+        # Add recommendations based on findings
+        for finding in report["findings"]:
+            if "remediation" in finding:
+                report["recommendations"].append({
+                    "title": f"Fix {finding.get('name', 'vulnerability')}",
+                    "description": finding.get("remediation", ""),
+                    "severity": finding.get("severity", "info")
+                })
+        
+        # Save report to database
+        try:
+            await save_to_db("reports", report)
+        except Exception as e:
+            print(f"Error saving report to database: {e}")
+            cls._save_report_to_file(report)
+        
+        return report_id 

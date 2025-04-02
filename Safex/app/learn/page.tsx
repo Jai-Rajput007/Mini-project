@@ -8,9 +8,33 @@ import { FlipWords } from "@/components/ui/flip-words";
 import ClickLight from "@/components/custom/click-light";
 import ClickDarkNew from "@/components/custom/click-dark-new";
 
-// Dynamically import components that might cause hydration issues
-const ExpandableCardDemo = dynamic(
-  () => import('@/components/expandable-card-demo-standard'),
+// Dynamically import module components to avoid hydration issues
+const InjectionAttacksModule = dynamic(
+  () => import('@/components/learning-modules/module-injection-attacks'),
+  {
+    ssr: false,
+    loading: () => <div className="w-full h-32 animate-pulse bg-gray-200 dark:bg-gray-800 rounded-lg" /> 
+  }
+);
+
+const InputValidationModule = dynamic(
+  () => import('@/components/learning-modules/module-input-validation'),
+  {
+    ssr: false,
+    loading: () => <div className="w-full h-32 animate-pulse bg-gray-200 dark:bg-gray-800 rounded-lg" /> 
+  }
+);
+
+const CrossSiteScriptingModule = dynamic(
+  () => import('@/components/learning-modules/module-cross-site-scripting'),
+  {
+    ssr: false,
+    loading: () => <div className="w-full h-32 animate-pulse bg-gray-200 dark:bg-gray-800 rounded-lg" /> 
+  }
+);
+
+const AuthenticationSecurityModule = dynamic(
+  () => import('@/components/learning-modules/module-authentication-security'),
   {
     ssr: false,
     loading: () => <div className="w-full h-32 animate-pulse bg-gray-200 dark:bg-gray-800 rounded-lg" /> 
@@ -23,11 +47,12 @@ const ThemeButton = dynamic(() => import('@/components/custom/theme-button'), {
   loading: () => <div className="w-[200px] h-[68px] animate-pulse bg-gray-200 dark:bg-gray-800 rounded-lg" />
 });
 
+// Updated module definitions with corresponding components
 const modules = [
-  { title: "Injection Attacks" },
-  { title: "Input Validation" },
-  { title: "Cross-Site Scripting (XSS)" },
-  { title: "Cross-Site Request Forgery (CSRF)" }
+  { title: "Injection Attacks", Component: InjectionAttacksModule },
+  { title: "Input Validation", Component: InputValidationModule },
+  { title: "Cross-Site Scripting (XSS)", Component: CrossSiteScriptingModule },
+  { title: "Authentication Security", Component: AuthenticationSecurityModule }
 ];
 
 export default function LearnPage() {
@@ -62,20 +87,23 @@ export default function LearnPage() {
       <div className="w-full h-24 bg-gradient-to-b from-slate-950 to-white dark:from-slate-950 dark:to-black"></div>
 
       <div className="w-full bg-white dark:bg-black">
-        {modules.map((module, index) => (
-          <motion.section
-            key={module.title}
-            initial={{ opacity: 0, y: 50 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: index * 0.1 }}
-            className="py-12 px-4"
-          >
-            <h2 className="text-3xl font-semibold text-gray-900 dark:text-white text-center mb-8">       
-              {module.title}
-            </h2>
-            <ExpandableCardDemo />
-          </motion.section>
-        ))}
+        {modules.map((module, index) => {
+          const ModuleComponent = module.Component;
+          return (
+            <motion.section
+              key={module.title}
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: index * 0.1 }}
+              className="py-12 px-4"
+            >
+              <h2 className="text-3xl font-semibold text-gray-900 dark:text-white text-center mb-8">       
+                {module.title}
+              </h2>
+              <ModuleComponent />
+            </motion.section>
+          );
+        })}
 
         <div className="flex justify-center my-12">
           <ReturnTop />

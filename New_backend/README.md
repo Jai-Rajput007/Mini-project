@@ -1,85 +1,83 @@
 # Safex Vulnerability Scanner Backend
 
-This is the backend API service for the Safex Vulnerability Scanner application, which helps identify security vulnerabilities in web applications.
-
-## Features
-
-- XSS (Cross-Site Scripting) scanning
-- SQL Injection scanning
-- HTTP Methods scanning
-- File Upload vulnerability scanning
-- MongoDB integration for storing scan results
-- Asynchronous processing
+This is the backend for the Safex Web Vulnerability Scanner application.
 
 ## Setup
 
-1. Install dependencies:
+1. Clone the repository
+2. Install the required dependencies:
+   ```
+   pip install -r requirements.txt
+   ```
+3. The application comes with pre-configured MongoDB credentials in the `.env.example` file. 
+   Create a copy of this file to use these credentials:
+   ```
+   cp .env.example .env   # Linux/Mac
+   Copy-Item .env.example .env  # Windows
+   ```
+
+## MongoDB Connection
+
+The application uses a MongoDB Atlas cluster with the following pre-configured credentials:
+- Username: jaisrajputdev
+- Password: newpass1234
+- Cluster: mycluster.7ay65.mongodb.net
+
+You can test the MongoDB connection by running:
+```
+python test_connection.py
+```
+
+If you want to use your own MongoDB instance, update the connection string in your `.env` file.
+
+## Running the Backend
+
+### Correct Way to Start the Backend
+
+Always use the `run.py` script from the project root to start the backend:
 
 ```bash
-pip install -r requirements.txt
+python run.py
 ```
 
-2. Set up environment variables (optional, defaults are provided):
+This will:
+- Start the FastAPI server on port 8000 (default)
+- Connect to the MongoDB database
+- Initialize all necessary services
 
-```
-MONGODB_URL=mongodb+srv://username:password@cluster.example.net/?retryWrites=true&w=majority
-DB_NAME=safex_vulnerability_scanner
-PORT=8000
-HOST=0.0.0.0
-```
+### Important Notes
 
-3. Run the application:
+- Do NOT run `app/main.py` directly - always use `run.py`
+- Make sure MongoDB is properly configured
+- The API will be available at: http://localhost:8000
+- API documentation is available at: http://localhost:8000/docs
+
+## Testing the Backend
+
+You can test the backend with the included test scripts:
 
 ```bash
-python -m app.main
-```
+# Test a basic scan
+python test_minimal.py
 
-Or with uvicorn directly:
-
-```bash
-uvicorn app.main:app --reload
+# Full test of all endpoints
+python test_api.py
 ```
 
 ## API Endpoints
 
-- **GET /**: Root endpoint with API information
-- **GET /health**: Health check endpoint
-- **POST /api/v1/scanner/start**: Start a new scan
-- **GET /api/v1/scanner/{scan_id}**: Get scan status
-- **GET /api/v1/scanner/{scan_id}/result**: Get scan results
-- **GET /api/v1/scanner/scanner-info**: Get information about available scanners
-- **GET /api/v1/scanner/list**: List all scans
+The main API endpoints are:
 
-## Request Examples
+- `/api/v1/scanner/start` - Start a new scan (POST)
+- `/api/v1/scanner/{scan_id}` - Get scan status (GET)
+- `/api/v1/scanner/{scan_id}/result` - Get scan results (GET)
+- `/api/v1/reports/generate` - Generate a report (POST)
+- `/api/v1/reports/{report_id}/export/{format}` - Export a report (GET)
 
-### Start a scan:
+See the API documentation for a complete list of endpoints.
 
-```json
-POST /api/v1/scanner/start
-{
-  "url": "https://example.com",
-  "scanners": ["xss", "sql_injection"],
-  "scanner_group": "essential"
-}
-```
+## Troubleshooting
 
-### Get scan status:
-
-```
-GET /api/v1/scanner/123e4567-e89b-12d3-a456-426614174000
-```
-
-### Get scan results:
-
-```
-GET /api/v1/scanner/123e4567-e89b-12d3-a456-426614174000/result
-```
-
-## Development
-
-The application is built with FastAPI and uses async programming patterns throughout. Key components:
-
-- **models/scan.py**: Pydantic models for data validation
-- **services/*.py**: Scanner implementations for different vulnerability types
-- **api/routes/scanner_routes.py**: API endpoint definitions
-- **db/database.py**: Database connection and helpers 
+1. If you see database connection errors, run `python test_connection.py` to diagnose MongoDB connectivity issues
+2. If scanners are timing out, try reducing the number of scanners you're using in a single scan
+3. For more detailed logs, set the log level to "debug" in `run.py` 

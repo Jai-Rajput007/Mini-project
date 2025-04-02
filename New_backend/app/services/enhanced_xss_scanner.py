@@ -198,51 +198,58 @@ class EnhancedXSSScanner:
         
         Args:
             url: The URL to scan
-        
-        Returns:
-            A list of vulnerabilities found
-        """
-        all_vulnerabilities = []
-        # Create a semaphore to limit concurrent requests
-        semaphore = asyncio.Semaphore(5)
-        
-        # Create tasks for each type of check
-        tasks = [
-            self._check_url_parameters(url, semaphore),
-            self._check_forms(url, semaphore),
-            self._check_dom_xss(url, semaphore),
-            self._check_stored_xss(url, semaphore),
-            self._test_waf_bypass(url, semaphore)
-        ]
-        
-        # Run all tasks concurrently
-        results = await asyncio.gather(*tasks)
-        
-        # Combine all vulnerabilities found
-        for result in results:
-            all_vulnerabilities.extend(result)
-        
-        # Remove any duplicate vulnerabilities
-        unique_vulns = []
-        seen_ids = set()
-        
-        for vuln in all_vulnerabilities:
-            if vuln['id'] not in seen_ids:
-                seen_ids.add(vuln['id'])
-                unique_vulns.append(vuln)
-        
-        # Add more context and metadata
-        for vuln in unique_vulns:
-            vuln['scanner'] = 'EnhancedXSSScanner'
-            vuln['timestamp'] = datetime.datetime.now().isoformat()
             
-            # Add OWASP reference
-            vuln['references'] = [
-                "https://owasp.org/www-community/attacks/xss/",
-                "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html"
-            ]
+        Returns:
+            List[Dict[str, Any]]: List of vulnerabilities found
+        """
+        print(f"Starting Enhanced XSS scan for URL: {url}")
+        all_vulnerabilities = []
         
-        return unique_vulns
+        try:
+            # Create a semaphore to limit concurrent requests
+            semaphore = asyncio.Semaphore(self.max_concurrent_requests)
+            
+            # Check URL parameters for reflected XSS
+            try:
+                url_param_vulns = await self._check_url_parameters(url, semaphore)
+                all_vulnerabilities.extend(url_param_vulns)
+            except Exception as e:
+                print(f"Error checking URL parameters for XSS: {str(e)}")
+            
+            # Check forms for reflected XSS
+            try:
+                form_vulns = await self._check_forms(url, semaphore)
+                all_vulnerabilities.extend(form_vulns)
+            except Exception as e:
+                print(f"Error checking forms for XSS: {str(e)}")
+            
+            # Check for DOM-based XSS
+            try:
+                dom_vulns = await self._check_dom_xss(url, semaphore)
+                all_vulnerabilities.extend(dom_vulns)
+            except Exception as e:
+                print(f"Error checking for DOM-based XSS: {str(e)}")
+            
+            # Check for stored XSS
+            try:
+                stored_vulns = await self._check_stored_xss(url, semaphore)
+                all_vulnerabilities.extend(stored_vulns)
+            except Exception as e:
+                print(f"Error checking for stored XSS: {str(e)}")
+            
+            # Test for WAF bypass
+            try:
+                waf_bypass_vulns = await self._test_waf_bypass(url, semaphore)
+                all_vulnerabilities.extend(waf_bypass_vulns)
+            except Exception as e:
+                print(f"Error testing WAF bypass: {str(e)}")
+            
+            print(f"Found {len(all_vulnerabilities)} XSS vulnerabilities")
+            return all_vulnerabilities
+            
+        except Exception as e:
+            print(f"Error during XSS scan: {str(e)}")
+            return []
 
     async def _check_url_parameters(self, url: str, semaphore: asyncio.Semaphore) -> List[Dict[str, Any]]:
         """

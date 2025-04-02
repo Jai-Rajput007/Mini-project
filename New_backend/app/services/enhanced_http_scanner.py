@@ -64,35 +64,28 @@ class EnhancedHTTPScanner:
             List[Dict[str, Any]]: List of vulnerabilities found
         """
         print(f"Starting Enhanced HTTP Methods scan for URL: {url}")
+        all_vulnerabilities = []
+        semaphore = asyncio.Semaphore(5)  # Limit concurrent requests
         
-        vulnerabilities = []
-        
-        # Create a semaphore to limit concurrent requests
-        semaphore = asyncio.Semaphore(5)
-        
-        # Test each HTTP method
-        method_tasks = []
-        for method in self.http_methods:
-            task = self._test_http_method(url, method, semaphore)
-            method_tasks.append(task)
-        
-        # Run all method tests concurrently
-        method_results = await asyncio.gather(*method_tasks, return_exceptions=True)
-        
-        # Filter out exceptions and None results
-        for result in method_results:
-            if isinstance(result, list):
-                vulnerabilities.extend(result)
-        
-        # Check for security headers
-        header_vulns = await self._check_security_headers(url, semaphore)
-        vulnerabilities.extend(header_vulns)
-        
-        # Check for CORS misconfiguration
-        cors_vulns = await self._check_cors_config(url, semaphore)
-        vulnerabilities.extend(cors_vulns)
-        
-        return vulnerabilities
+        try:
+            # Test HTTP methods
+            for method in self.http_methods:
+                vulnerabilities = await self._test_http_method(url, method, semaphore)
+                all_vulnerabilities.extend(vulnerabilities)
+            
+            # Check security headers
+            header_vulnerabilities = await self._check_security_headers(url, semaphore)
+            all_vulnerabilities.extend(header_vulnerabilities)
+            
+            # Check CORS configuration
+            cors_vulnerabilities = await self._check_cors_config(url, semaphore)
+            all_vulnerabilities.extend(cors_vulnerabilities)
+            
+            print(f"Found {len(all_vulnerabilities)} HTTP method vulnerabilities")
+            return all_vulnerabilities
+        except Exception as e:
+            print(f"Error in HTTP methods scan: {str(e)}")
+            return all_vulnerabilities
     
     async def _test_http_method(self, url: str, method: str, semaphore: asyncio.Semaphore) -> List[Dict[str, Any]]:
         """

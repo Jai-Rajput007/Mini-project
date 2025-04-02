@@ -1,3 +1,11 @@
+"""
+Main application module for Safex Vulnerability Scanner API.
+
+IMPORTANT: Do not run this file directly. Use the run.py file in the root directory instead.
+Example:
+    python run.py
+"""
+
 import os
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,7 +38,7 @@ async def startup_db_client():
     try:
         # Connect to MongoDB
         db = await connect_to_mongo()
-        if not db:
+        if db is None:
             print("WARNING: Failed to connect to MongoDB. Using in-memory database.")
         else:
             print("Successfully connected to MongoDB.")

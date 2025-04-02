@@ -3,6 +3,17 @@ import motor.motor_asyncio
 from typing import Optional, Dict, Any, List
 from bson import ObjectId
 import json
+from datetime import datetime
+
+# Custom JSON encoder that handles datetime
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        # Handle ObjectId
+        if isinstance(obj, ObjectId):
+            return str(obj)
+        return super().default(obj)
 
 # MongoDB Configuration
 # Use environment variables for better security
@@ -61,6 +72,7 @@ async def connect_to_mongo() -> Optional[motor.motor_asyncio.AsyncIOMotorDatabas
         
         # Set fallback flag
         _using_fallback = True
+        _db = None
         return None
 
 async def close_mongo_connection() -> None:
@@ -78,8 +90,13 @@ def get_db() -> motor.motor_asyncio.AsyncIOMotorDatabase:
         motor.motor_asyncio.AsyncIOMotorDatabase: Database connection object
     """
     global _db, _using_fallback
-    if not _db and not _using_fallback:
+    
+    if _using_fallback:
+        return None
+        
+    if _db is None:
         raise Exception("Database not initialized. Call connect_to_mongo() first.")
+    
     return _db
 
 def _get_fallback_dir() -> str:
@@ -104,12 +121,11 @@ async def save_to_db(collection: str, data: Dict[str, Any]) -> str:
     Returns:
         str: ID of inserted document
     """
-    global _using_fallback
+    global _using_fallback, _db
     
     try:
-        if not _using_fallback:
-            db = get_db()
-            result = await db[collection].insert_one(data)
+        if not _using_fallback and _db is not None:
+            result = await _db[collection].insert_one(data)
             return str(result.inserted_id)
         else:
             # Use fallback JSON storage
@@ -134,7 +150,7 @@ def _save_to_json(collection: str, data: Dict[str, Any]) -> str:
     # Save to file
     file_path = os.path.join(collection_dir, f"{doc_id}.json")
     with open(file_path, "w") as f:
-        json.dump(data, f, indent=2)
+        json.dump(data, f, indent=2, cls=DateTimeEncoder)
         
     print(f"Saved {collection}/{doc_id} to local storage")
     return doc_id
@@ -151,12 +167,11 @@ async def update_in_db(collection: str, filter_query: Dict[str, Any], update_dat
     Returns:
         bool: True if successful, False otherwise
     """
-    global _using_fallback
+    global _using_fallback, _db
     
     try:
-        if not _using_fallback:
-            db = get_db()
-            result = await db[collection].update_one(filter_query, {"$set": update_data})
+        if not _using_fallback and _db is not None:
+            result = await _db[collection].update_one(filter_query, {"$set": update_data})
             return result.modified_count > 0
         else:
             # Use fallback JSON storage
@@ -191,7 +206,7 @@ def _update_in_json(collection: str, filter_query: Dict[str, Any], update_data: 
                 
                 # Save updated document
                 with open(file_path, "w") as f:
-                    json.dump(doc, f, indent=2)
+                    json.dump(doc, f, indent=2, cls=DateTimeEncoder)
                     
                 print(f"Updated {collection}/{filename} in local storage")
                 return True
@@ -211,12 +226,11 @@ async def find_document(collection: str, query: Dict[str, Any]) -> Optional[Dict
     Returns:
         Optional[Dict[str, Any]]: Document if found, None otherwise
     """
-    global _using_fallback
+    global _using_fallback, _db
     
     try:
-        if not _using_fallback:
-            db = get_db()
-            document = await db[collection].find_one(query)
+        if not _using_fallback and _db is not None:
+            document = await _db[collection].find_one(query)
             if document and "_id" in document:
                 document["_id"] = str(document["_id"])  # Convert ObjectId to string
             return document
@@ -270,12 +284,11 @@ async def find_documents(collection: str, query: Dict[str, Any], limit: int = 0,
     Returns:
         list: List of documents
     """
-    global _using_fallback
+    global _using_fallback, _db
     
     try:
-        if not _using_fallback:
-            db = get_db()
-            cursor = db[collection].find(query).skip(skip)
+        if not _using_fallback and _db is not None:
+            cursor = _db[collection].find(query).skip(skip)
             
             if sort_field:
                 cursor = cursor.sort(sort_field, sort_order)
@@ -344,12 +357,11 @@ async def delete_document(collection: str, query: Dict[str, Any]) -> bool:
     Returns:
         bool: True if successful, False otherwise
     """
-    global _using_fallback
+    global _using_fallback, _db
     
     try:
-        if not _using_fallback:
-            db = get_db()
-            result = await db[collection].delete_one(query)
+        if not _using_fallback and _db is not None:
+            result = await _db[collection].delete_one(query)
             return result.deleted_count > 0
         else:
             # Use fallback JSON storage
@@ -399,17 +411,16 @@ async def get_document_by_id(collection: str, doc_id: str) -> Optional[Dict[str,
     Returns:
         Optional[Dict[str, Any]]: Document if found, None otherwise
     """
-    global _using_fallback
+    global _using_fallback, _db
     
     try:
-        if not _using_fallback:
-            db = get_db()
+        if not _using_fallback and _db is not None:
             try:
                 # Try as MongoDB ObjectId
-                document = await db[collection].find_one({"_id": ObjectId(doc_id)})
+                document = await _db[collection].find_one({"_id": ObjectId(doc_id)})
             except Exception:
                 # Try as a regular string ID
-                document = await db[collection].find_one({"_id": doc_id})
+                document = await _db[collection].find_one({"_id": doc_id})
                 
             if document:
                 document["_id"] = str(document["_id"])

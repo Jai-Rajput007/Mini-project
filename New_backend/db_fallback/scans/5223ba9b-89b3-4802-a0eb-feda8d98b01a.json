@@ -1,0 +1,15 @@
+{
+  "scan_id": "5223ba9b-89b3-4802-a0eb-feda8d98b01a",
+  "url": "http://testphp.vulnweb.com/",
+  "status": "pending",
+  "timestamp": "2025-04-01T23:23:05.042423",
+  "scanners_used": [
+    "xss",
+    "sql_injection",
+    "http_methods",
+    "file_upload"
+  ],
+  "progress": 0,
+  "scan_params": {},
+  "result_id": "5223ba9b-89b3-4802-a0eb-feda8d98b01a"
+}

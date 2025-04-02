@@ -145,28 +145,49 @@ class EnhancedTestRunner:
     
     async def test_basic_scanner(self):
         """Run basic scanner."""
-        scanner = BasicScanner()
-        return await scanner.scan_url(self.url)
+        try:
+            scanner = BasicScanner()
+            return await scanner.scan_url(self.url)
+        except Exception as e:
+            print(f"Error in basic scan: {e}")
+            return []
     
     async def test_xss_scanner(self):
         """Run XSS scanner."""
-        scanner = EnhancedXSSScanner()
-        return await scanner.scan_url(self.url)
+        try:
+            scanner = EnhancedXSSScanner()
+            return await scanner.scan_url(self.url)
+        except Exception as e:
+            print(f"Error in XSS scan: {e}")
+            return []
     
     async def test_sql_injection_scanner(self):
         """Run SQL injection scanner."""
-        scanner = EnhancedSQLScanner()
-        return await scanner.scan_url(self.url)
+        try:
+            scanner = EnhancedSQLScanner()
+            vulnerabilities = await scanner.scan_url(self.url)
+            return vulnerabilities
+        except Exception as e:
+            print(f"Error in SQL injection scan: {e}")
+            return []
     
     async def test_http_methods_scanner(self):
         """Run HTTP methods scanner."""
-        scanner = EnhancedHTTPScanner()
-        return await scanner.scan_url(self.url)
+        try:
+            scanner = EnhancedHTTPScanner()
+            return await scanner.scan_url(self.url)
+        except Exception as e:
+            print(f"Error in HTTP methods scan: {e}")
+            return []
     
     async def test_file_upload_scanner(self):
         """Run file upload scanner."""
-        scanner = EnhancedFileUploadScanner()
-        return await scanner.scan_url(self.url)
+        try:
+            scanner = EnhancedFileUploadScanner()
+            return await scanner.scan_url(self.url)
+        except Exception as e:
+            print(f"Error in file upload scan: {e}")
+            return []
     
     def print_summary(self):
         """Print a summary of the scan results."""

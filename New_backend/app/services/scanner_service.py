@@ -6,8 +6,8 @@ import uuid
 from datetime import datetime
 from typing import Dict, List, Any, Optional, Set
 
-from ..models.scan import ScanRequest, ScanResponse, ScanResult, ScanStatus, ScannerType
-from ..db.database import save_to_db, update_in_db, find_document, find_documents, connect_to_mongo
+from ..models.scan import ScanRequest, ScanResponse, ScanResult, ScanStatus, ScannerType, ScannerGroup, SCANNER_GROUPS
+from ..db.database import save_to_db, update_in_db, find_document, find_documents, connect_to_mongo, get_db, delete_document
 from .enhanced_sql_scanner import EnhancedSQLScanner
 from .enhanced_http_scanner import EnhancedHTTPScanner
 from .enhanced_file_upload_scanner import EnhancedFileUploadScanner
@@ -41,169 +41,235 @@ class ScannerService:
     @classmethod
     async def start_scan(cls, scan_request: ScanRequest) -> ScanResponse:
         """
-        Start a new vulnerability scan.
+        Start a new scan.
         
         Args:
-            scan_request: The scan request data
+            scan_request: The scan request
             
         Returns:
-            ScanResponse: Initial response with scan ID and status
+            ScanResponse: The scan response
         """
-        # Initialize storage if needed
-        cls._init_storage()
-        
-        # Generate a unique scan ID
+        # Create a unique ID for this scan
         scan_id = str(uuid.uuid4())
-        
-        # Determine which scanners to use
-        scanners_to_use = scan_request.scanners if scan_request.scanners else []
-        if ScannerType.ALL in scanners_to_use:
-            scanners_to_use = [
-                ScannerType.BASIC,
-                ScannerType.SQL_INJECTION,
-                ScannerType.HTTP_METHODS,
-                ScannerType.FILE_UPLOAD
-            ]
         
         # Create scan record
         scan_record = {
             "scan_id": scan_id,
             "url": str(scan_request.url),
-            "status": ScanStatus.PENDING,
+            "status": "queued",
             "timestamp": datetime.utcnow().isoformat(),
-            "scanners_used": [s.value for s in scanners_to_use],
+            "scanners_used": [scanner.value for scanner in scan_request.scanners] if scan_request.scanners else [],
             "progress": 0,
-            "message": "Scan pending",
-            "total_scanners": len(scanners_to_use),
-            "completed_scanners": 0
+            "message": "Scan queued",
+            "completed_scanners": 0,
+            "total_scanners": len(scan_request.scanners) if scan_request.scanners else 0
         }
         
-        # Store scan record
+        # Save to database
         try:
             await save_to_db("scans", scan_record)
         except Exception as e:
-            print(f"Error saving to database: {e}")
-            # Fallback to local storage
+            print(f"Error saving scan to database: {e}")
             cls._save_scan_to_file(scan_record)
         
-        # Store scan in active scans
+        # Add to active scans
         cls._active_scans[scan_id] = scan_record
         
-        # Start the scan in the background
-        asyncio.create_task(cls._run_scan(scan_id, scan_request))
+        # Start scan in background
+        asyncio.create_task(cls._run_scan(
+            scan_id, 
+            str(scan_request.url), 
+            [scanner.value for scanner in scan_request.scanners] if scan_request.scanners else [],
+            scan_request.scan_params.dict() if scan_request.scan_params else None
+        ))
         
-        # Return initial scan response
+        # Return response with scan ID
         return ScanResponse(
             scan_id=scan_id,
             url=str(scan_request.url),
-            status=ScanStatus.PENDING,
-            timestamp=datetime.fromisoformat(scan_record["timestamp"]),
+            status=ScanStatus.QUEUED,
+            timestamp=datetime.fromisoformat(scan_record["timestamp"]) if isinstance(scan_record["timestamp"], str) else scan_record["timestamp"],
             scanners_used=scan_record["scanners_used"],
             progress=0,
-            message="Scan pending"
+            message="Scan queued"
         )
     
     @classmethod
-    async def _run_scan(cls, scan_id: str, scan_request: ScanRequest):
+    async def _run_scan(cls, scan_id: str, url: str, scanners: List[str], scan_params: Dict[str, Any] = None) -> None:
         """
-        Run the scan in the background.
+        Run a scan with the specified scanners. This is run as a background task.
         
         Args:
             scan_id: The ID of the scan
-            scan_request: The scan request data
+            url: The URL to scan
+            scanners: List of scanners to use
+            scan_params: Additional parameters for the scan
         """
-        # Update scan status to running
-        cls._update_scan_status(scan_id, ScanStatus.RUNNING, message="Scan in progress")
-        
+        print(f"Running scan {scan_id} for URL: {url} with scanners: {scanners}")
         start_time = time.time()
-        url = str(scan_request.url)
-        scanners_to_use = scan_request.scanners if scan_request.scanners else []
-        
-        if ScannerType.ALL in scanners_to_use:
-            scanners_to_use = [
-                ScannerType.BASIC,
-                ScannerType.SQL_INJECTION,
-                ScannerType.HTTP_METHODS,
-                ScannerType.FILE_UPLOAD
-            ]
-        
-        all_vulnerabilities = []
-        total_scanners = len(scanners_to_use)
         
         try:
-            # Run Basic scanner if requested
-            if ScannerType.BASIC in scanners_to_use:
-                cls._update_scan_message(scan_id, "Running Basic scanner (HTTP Headers and Port Scanning)...")
-                basic_scanner = BasicScanner()
-                basic_vulns = await basic_scanner.scan_url(url)
-                all_vulnerabilities.extend(basic_vulns)
-                cls._update_completed_scanners(scan_id, 1)
-            
-            # Run SQL Injection scanner if requested
-            if ScannerType.SQL_INJECTION in scanners_to_use:
-                cls._update_scan_message(scan_id, "Running Enhanced SQL Injection scanner...")
-                sqli_scanner = EnhancedSQLScanner()
-                sqli_vulns = await sqli_scanner.scan_url(url)
-                all_vulnerabilities.extend(sqli_vulns)
-                cls._update_completed_scanners(scan_id, 1)
-            
-            # Run HTTP Methods scanner if requested
-            if ScannerType.HTTP_METHODS in scanners_to_use:
-                cls._update_scan_message(scan_id, "Running Enhanced HTTP Methods scanner...")
-                http_methods_scanner = EnhancedHTTPScanner()
-                http_methods_vulns = await http_methods_scanner.scan_url(url)
-                all_vulnerabilities.extend(http_methods_vulns)
-                cls._update_completed_scanners(scan_id, 1)
-            
-            # Run File Upload scanner if requested
-            if ScannerType.FILE_UPLOAD in scanners_to_use:
-                cls._update_scan_message(scan_id, "Running Enhanced File Upload scanner...")
-                file_upload_scanner = EnhancedFileUploadScanner()
-                file_upload_vulns = await file_upload_scanner.scan_url(url)
-                all_vulnerabilities.extend(file_upload_vulns)
-                cls._update_completed_scanners(scan_id, 1)
-            
-            # Calculate scan duration
-            scan_duration = time.time() - start_time
-            
-            # Combine results
-            result = cls._combine_results(all_vulnerabilities)
-            result.scan_id = scan_id
-            result.url = url
-            result.scan_duration = scan_duration
-            result.scanners_used = [s.value for s in scanners_to_use]
-            
-            # Store result
-            result_dict = result.dict()
-            result_id = await save_to_db("scan_results", result_dict)
-            
-            if not result_id:
-                # Fallback to local storage
-                cls._save_result_to_file(result_dict)
-                result_id = scan_id
-            
-            # Save report to MongoDB using report service
-            scan_data = cls._active_scans.get(scan_id, {"scan_id": scan_id, "url": url})
-            report_id = await ReportService.save_report(scan_data, result_dict)
-            
-            # Update scan status to completed
-            cls._update_scan_status(
-                scan_id, 
-                ScanStatus.COMPLETED, 
-                progress=100, 
-                message=f"Scan completed. Found {len(all_vulnerabilities)} vulnerabilities.",
-                result_id=result_id,
-                report_id=report_id
-            )
+            # Set a timeout for the entire scan process (5 minutes)
+            async with asyncio.timeout(300):  # 5 minutes timeout
+                # Update scan status to running
+                await cls._update_scan_status(scan_id, ScanStatus.RUNNING, "Initializing scanners")
+                
+                # Initialize results
+                results = []
+                completed_scanners = 0
+                total_scanners = len(scanners)
+                scan_params = scan_params or {}
+                
+                # Track which scanners have been completed
+                completed_scanner_types = set()
+                
+                # Update progress
+                await cls._update_scan_progress(scan_id, 10)  # 10% - started
+                
+                # Run each scanner with individual timeouts
+                for scanner_type in scanners:
+                    scanner_start_time = time.time()
+                    try:
+                        # Set a timeout for each individual scanner (2 minutes)
+                        async with asyncio.timeout(120):  # 2 minutes timeout per scanner
+                            await cls._update_scan_message(scan_id, f"Running {scanner_type} scanner")
+                            
+                            # Get scanner vulnerabilities
+                            scanner_result = []
+                            
+                            if scanner_type == ScannerType.BASIC:
+                                from ..services.basic_scanner import BasicScanner
+                                basic_scanner = BasicScanner()
+                                scanner_result = await basic_scanner.scan_url(url)
+                            
+                            elif scanner_type == ScannerType.XSS:
+                                from ..services.enhanced_xss_scanner import EnhancedXSSScanner
+                                xss_scanner = EnhancedXSSScanner()
+                                scanner_result = await xss_scanner.scan_url(url)
+                            
+                            elif scanner_type == ScannerType.SQL_INJECTION:
+                                from ..services.enhanced_sql_scanner import EnhancedSQLScanner
+                                sql_scanner = EnhancedSQLScanner()
+                                scanner_result = await sql_scanner.scan_url(url)
+                            
+                            elif scanner_type == ScannerType.HTTP_METHODS:
+                                from ..services.enhanced_http_scanner import EnhancedHTTPScanner
+                                http_scanner = EnhancedHTTPScanner()
+                                scanner_result = await http_scanner.scan_url(url)
+                            
+                            elif scanner_type == ScannerType.FILE_UPLOAD:
+                                from ..services.enhanced_file_upload_scanner import EnhancedFileUploadScanner
+                                file_upload_scanner = EnhancedFileUploadScanner()
+                                scanner_result = await file_upload_scanner.scan_url(url)
+                            
+                            # Add results if any were found
+                            if scanner_result and isinstance(scanner_result, list):
+                                results.extend(scanner_result)
+                            
+                            # Mark scanner as completed
+                            completed_scanners += 1
+                            completed_scanner_types.add(scanner_type)
+                            
+                            # Calculate scanner duration
+                            scanner_duration = time.time() - scanner_start_time
+                            print(f"Scanner {scanner_type} completed in {scanner_duration:.2f} seconds")
+                    
+                    except asyncio.TimeoutError:
+                        print(f"Scanner {scanner_type} timed out after 120 seconds")
+                        # Still mark as completed but with timeout
+                        completed_scanners += 1
+                        # Add a timeout vulnerability
+                        results.append({
+                            "id": str(uuid.uuid4()),
+                            "name": f"{scanner_type} Scanner Timeout",
+                            "description": f"The {scanner_type} scanner timed out after 120 seconds",
+                            "severity": "info",
+                            "location": url,
+                            "evidence": "Scanner timeout",
+                            "remediation": "Try scanning with fewer scanners or contact support"
+                        })
+                    
+                    except Exception as e:
+                        print(f"Error in scanner {scanner_type}: {str(e)}")
+                        completed_scanners += 1
+                        # Add an error vulnerability
+                        results.append({
+                            "id": str(uuid.uuid4()),
+                            "name": f"{scanner_type} Scanner Error",
+                            "description": f"The {scanner_type} scanner encountered an error: {str(e)}",
+                            "severity": "info",
+                            "location": url,
+                            "evidence": str(e),
+                            "remediation": "Check logs for more details or contact support"
+                        })
+                    
+                    # Update progress after each scanner (from 10% to 90% based on completion)
+                    progress = 10 + int(80 * (completed_scanners / total_scanners))
+                    await cls._update_scan_progress(scan_id, progress)
+                
+                # Calculate scan duration
+                scan_duration = round(time.time() - start_time, 2)
+                
+                # Create the result even if no vulnerabilities were found
+                scan_result = ScanResult(
+                    scan_id=scan_id,
+                    url=url,
+                    timestamp=datetime.utcnow(),
+                    scan_duration=scan_duration,
+                    scanners_used=[s for s in scanners if s in completed_scanner_types],
+                    findings=results
+                )
+                
+                # Calculate summary
+                summary = {"critical": 0, "high": 0, "medium": 0, "low": 0, "info": 0}
+                for finding in results:
+                    severity = finding.get("severity", "info").lower()
+                    if severity in summary:
+                        summary[severity] += 1
+                
+                # Add summary to result
+                scan_result.summary = summary
+                
+                # Serialize the result
+                result_data = json.loads(scan_result.model_dump_json())
+                
+                # Save to database or file
+                try:
+                    result_id = await save_to_db("scan_results", result_data)
+                    if result_id:
+                        await cls._update_scan_result(scan_id, result_id)
+                    else:
+                        cls._save_result_to_file(result_data)
+                except Exception as e:
+                    print(f"Error saving scan result: {str(e)}")
+                    cls._save_result_to_file(result_data)
+                
+                # Generate report
+                try:
+                    report_id = await ReportService.generate_report(scan_id)
+                    if report_id:
+                        await cls._update_scan_report(scan_id, report_id)
+                except Exception as e:
+                    print(f"Error generating report: {str(e)}")
+                
+                # Update scan status to completed
+                await cls._update_scan_status(scan_id, ScanStatus.COMPLETED, "Scan completed successfully")
+                await cls._update_scan_progress(scan_id, 100)  # 100% - completed
+        
+        except asyncio.TimeoutError:
+            # Overall scan timeout
+            print(f"Scan {scan_id} timed out after 5 minutes")
+            await cls._update_scan_status(scan_id, ScanStatus.FAILED, "Scan timed out after 5 minutes")
             
         except Exception as e:
             # Update scan status to failed
-            cls._update_scan_status(
-                scan_id, 
-                ScanStatus.FAILED,
-                message=f"Scan failed: {str(e)}"
-            )
-            print(f"Error running scan: {str(e)}")
+            print(f"Error during scan: {str(e)}")
+            await cls._update_scan_status(scan_id, ScanStatus.FAILED, f"Scan failed: {str(e)}")
+        
+        finally:
+            # Remove from active scans
+            if scan_id in cls._active_scans:
+                del cls._active_scans[scan_id]
     
     @classmethod
     def _init_storage(cls):
@@ -234,37 +300,31 @@ class ScannerService:
             json.dump(scan_record, f, indent=2)
     
     @classmethod
-    def _update_scan_status(cls, scan_id: str, status: str, **kwargs):
+    async def _update_scan_status(cls, scan_id: str, status: str, message: str = None):
         """
-        Update scan status.
+        Update the status of a scan.
         
         Args:
             scan_id: The ID of the scan
             status: The new status
-            **kwargs: Additional data to update
+            message: Optional message about the status
         """
+        update_data = {"status": status}
+        if message:
+            update_data["message"] = message
+        
+        update_data["updated_at"] = datetime.utcnow().isoformat()
+        
+        # Update in database
+        success = await update_in_db("scans", {"scan_id": scan_id}, update_data)
+        
+        # Update in active scans cache
         if scan_id in cls._active_scans:
-            # Update in memory
-            cls._active_scans[scan_id].update({"status": status, **kwargs})
-            
-            # Update in database
-            try:
-                update_in_db("scans", {"scan_id": scan_id}, {"status": status, **kwargs})
-            except Exception as e:
-                print(f"Error updating scan in database: {e}")
-                # Fallback to local storage
-                file_path = os.path.join(cls._cache_dir, "scans", f"{scan_id}.json")
-                if os.path.exists(file_path):
-                    try:
-                        with open(file_path, "r") as f:
-                            scan_record = json.load(f)
-                        
-                        scan_record.update({"status": status, **kwargs})
-                        
-                        with open(file_path, "w") as f:
-                            json.dump(scan_record, f, indent=2)
-                    except Exception as e2:
-                        print(f"Error updating scan in file: {e2}")
+            cls._active_scans[scan_id]["status"] = status
+            if message:
+                cls._active_scans[scan_id]["message"] = message
+        
+        return success
     
     @classmethod
     def _save_result_to_file(cls, result_data: Dict[str, Any]):
@@ -470,7 +530,7 @@ class ScannerService:
         return scan_responses
     
     @classmethod
-    def _update_scan_message(cls, scan_id: str, message: str):
+    async def _update_scan_message(cls, scan_id: str, message: str):
         """
         Update scan message.
         
@@ -478,28 +538,72 @@ class ScannerService:
             scan_id: The ID of the scan
             message: The new message
         """
-        cls._update_scan_status(scan_id, cls._active_scans[scan_id]["status"], message=message)
+        if scan_id in cls._active_scans:
+            current_status = cls._active_scans[scan_id]["status"]
+            await cls._update_scan_status(scan_id, current_status, message=message)
+            
+            # Update progress based on scanner completion
+            completed_scanners = cls._active_scans[scan_id].get("completed_scanners", 0)
+            total_scanners = len(cls._active_scans[scan_id]["scanners_used"])
+            progress = min(int((completed_scanners / total_scanners) * 100), 99) if total_scanners > 0 else 0
+            await cls._update_scan_progress(scan_id, progress)
     
     @classmethod
-    def _update_completed_scanners(cls, scan_id: str, scanner_index: int):
+    async def _update_scan_progress(cls, scan_id: str, progress: int):
         """
-        Update the number of completed scanners and progress.
+        Update scan progress.
         
         Args:
             scan_id: The ID of the scan
-            scanner_index: The index of the completed scanner
+            progress: The new progress (0-100)
         """
         if scan_id in cls._active_scans:
-            completed = cls._active_scans[scan_id].get("completed_scanners", 0) + 1
-            total = cls._active_scans[scan_id].get("total_scanners", 1)
-            progress = int((completed / total) * 100)
+            # Update in memory
+            cls._active_scans[scan_id]["progress"] = progress
             
-            cls._update_scan_status(
-                scan_id, 
-                cls._active_scans[scan_id]["status"], 
-                completed_scanners=completed,
-                progress=progress
-            )
+            # Update in database
+            try:
+                await update_in_db("scans", {"scan_id": scan_id}, {"progress": progress})
+            except Exception as e:
+                print(f"Error updating scan progress in database: {e}")
+                # Fallback to local storage
+                file_path = os.path.join(cls._cache_dir, "scans", f"{scan_id}.json")
+                if os.path.exists(file_path):
+                    try:
+                        with open(file_path, "r") as f:
+                            scan_record = json.load(f)
+                        
+                        scan_record["progress"] = progress
+                        
+                        with open(file_path, "w") as f:
+                            json.dump(scan_record, f, indent=2)
+                    except Exception as e2:
+                        print(f"Error updating scan progress in file: {e2}")
+    
+    @classmethod
+    async def _update_completed_scanners(cls, scan_id: str):
+        """
+        Increment the count of completed scanners.
+        
+        Args:
+            scan_id: The ID of the scan
+        """
+        if scan_id in cls._active_scans:
+            # Update in memory
+            completed = cls._active_scans[scan_id].get("completed_scanners", 0) + 1
+            cls._active_scans[scan_id]["completed_scanners"] = completed
+            
+            # Update in database
+            try:
+                await update_in_db("scans", {"scan_id": scan_id}, {"completed_scanners": completed})
+            except Exception as e:
+                print(f"Error updating completed scanners in database: {e}")
+                # Fallback to local storage update is handled by _update_scan_progress
+            
+            # Update progress
+            total_scanners = len(cls._active_scans[scan_id]["scanners_used"])
+            progress = min(int((completed / total_scanners) * 100), 99) if total_scanners > 0 else 0
+            await cls._update_scan_progress(scan_id, progress)
     
     @classmethod
     def _combine_results(cls, results: List[Dict[str, Any]]) -> ScanResult:
@@ -559,4 +663,149 @@ class ScannerService:
         Returns:
             Optional[str]: The path to the exported file
         """
-        return await ReportService.export_report(report_id, format_type) 
+        return await ReportService.export_report(report_id, format_type)
+
+    @staticmethod
+    def _serialize_scan_data(scan_data):
+        """
+        Ensure all data is serializable by converting datetimes to ISO strings.
+        
+        Args:
+            scan_data: The scan data dictionary
+            
+        Returns:
+            dict: The serialized scan data
+        """
+        serialized = {}
+        for key, value in scan_data.items():
+            if isinstance(value, datetime):
+                serialized[key] = value.isoformat()
+            elif isinstance(value, dict):
+                serialized[key] = ScannerService._serialize_scan_data(value)
+            elif isinstance(value, list):
+                serialized[key] = [
+                    ScannerService._serialize_scan_data(item) if isinstance(item, dict) else 
+                    item.isoformat() if isinstance(item, datetime) else item
+                    for item in value
+                ]
+            else:
+                serialized[key] = value
+        return serialized 
+
+    @classmethod
+    async def _update_scan_result(cls, scan_id: str, result_id: str):
+        """
+        Update scan with result ID.
+        
+        Args:
+            scan_id: The ID of the scan
+            result_id: The ID of the result
+        """
+        if scan_id in cls._active_scans:
+            # Update in memory
+            cls._active_scans[scan_id]["result_id"] = result_id
+            
+            # Update in database
+            try:
+                await update_in_db("scans", {"scan_id": scan_id}, {"result_id": result_id})
+            except Exception as e:
+                print(f"Error updating scan result in database: {e}")
+                # Fallback to local storage
+                file_path = os.path.join(cls._cache_dir, "scans", f"{scan_id}.json")
+                if os.path.exists(file_path):
+                    try:
+                        with open(file_path, "r") as f:
+                            scan_record = json.load(f)
+                        
+                        scan_record["result_id"] = result_id
+                        
+                        with open(file_path, "w") as f:
+                            json.dump(scan_record, f, indent=2)
+                    except Exception as e2:
+                        print(f"Error updating scan result in file: {e2}")
+    
+    @classmethod
+    async def _update_scan_report(cls, scan_id: str, report_id: str):
+        """
+        Update scan with report ID.
+        
+        Args:
+            scan_id: The ID of the scan
+            report_id: The ID of the report
+        """
+        if scan_id in cls._active_scans:
+            # Update in memory
+            cls._active_scans[scan_id]["report_id"] = report_id
+            
+            # Update in database
+            try:
+                await update_in_db("scans", {"scan_id": scan_id}, {"report_id": report_id})
+            except Exception as e:
+                print(f"Error updating scan report in database: {e}")
+                # Fallback to local storage
+                file_path = os.path.join(cls._cache_dir, "scans", f"{scan_id}.json")
+                if os.path.exists(file_path):
+                    try:
+                        with open(file_path, "r") as f:
+                            scan_record = json.load(f)
+                        
+                        scan_record["report_id"] = report_id
+                        
+                        with open(file_path, "w") as f:
+                            json.dump(scan_record, f, indent=2)
+                    except Exception as e2:
+                        print(f"Error updating scan report in file: {e2}")
+
+    @classmethod
+    async def get_scanner_info(cls) -> List[Dict[str, Any]]:
+        """
+        Get information about available scanners.
+        
+        Returns:
+            List[Dict[str, Any]]: List of available scanners with details
+        """
+        scanners = [
+            {
+                "id": ScannerType.BASIC.value,
+                "name": "Basic Scanner",
+                "description": "Scans for basic security issues and information disclosure",
+                "intensity": 1,
+                "category": "essential"
+            },
+            {
+                "id": ScannerType.XSS.value,
+                "name": "XSS Scanner",
+                "description": "Scans for Cross-Site Scripting vulnerabilities",
+                "intensity": 2,
+                "category": "essential"
+            },
+            {
+                "id": ScannerType.SQL_INJECTION.value,
+                "name": "SQL Injection Scanner",
+                "description": "Scans for SQL Injection vulnerabilities",
+                "intensity": 3,
+                "category": "essential"
+            },
+            {
+                "id": ScannerType.HTTP_METHODS.value,
+                "name": "HTTP Methods Scanner",
+                "description": "Checks for insecure HTTP methods",
+                "intensity": 1,
+                "category": "common"
+            },
+            {
+                "id": ScannerType.FILE_UPLOAD.value,
+                "name": "File Upload Scanner",
+                "description": "Scans for file upload vulnerabilities",
+                "intensity": 4,
+                "category": "advanced"
+            },
+            {
+                "id": ScannerType.ALL.value,
+                "name": "Comprehensive Scan",
+                "description": "Runs all available scanners",
+                "intensity": 5,
+                "category": "advanced"
+            }
+        ]
+        return scanners

@@ -58,6 +58,14 @@ class Vulnerability(BaseModel):
     evidence: str
     remediation: str
 
+class ScanStatus(str, Enum):
+    """Scan status enum."""
+    QUEUED = "queued"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    PARTIALLY_COMPLETED = "partially_completed"
+
 class ScanResult(BaseModel):
     """Model for scan result"""
     scan_id: str
@@ -74,13 +82,13 @@ class ScanResult(BaseModel):
         "info": 0
     }
     findings: List[Vulnerability] = []
-
-class ScanStatus(str, Enum):
-    """Status of a scan"""
-    PENDING = "pending"
-    RUNNING = "running"
-    COMPLETED = "completed"
-    FAILED = "failed"
+    
+    # Configure JSON serialization to handle datetime
+    model_config = {
+        "json_encoders": {
+            datetime: lambda dt: dt.isoformat()
+        }
+    }
 
 class ScanResponse(BaseModel):
     """Model for scan response"""
@@ -92,4 +100,11 @@ class ScanResponse(BaseModel):
     progress: int = 0  # 0-100%
     message: Optional[str] = None
     result_id: Optional[str] = None
-    report_id: Optional[str] = None 
+    report_id: Optional[str] = None
+    
+    # Configure JSON serialization to handle datetime
+    model_config = {
+        "json_encoders": {
+            datetime: lambda dt: dt.isoformat()
+        }
+    } 

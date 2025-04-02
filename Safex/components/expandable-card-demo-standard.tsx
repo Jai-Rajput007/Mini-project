@@ -113,9 +113,9 @@ export default function ExpandableCardDemo() {
                     {active.ctaText}
                   </a>
                 </div>
-                <div className="pt-4 relative px-4">
+                <div className="pt-4 relative px-4 max-h-[250px] overflow-y-auto pb-6">
                   <div
-                    className="text-neutral-600 text-xs md:text-sm lg:text-base h-40 md:h-fit pb-10 flex flex-col items-start gap-4 overflow-auto dark:text-neutral-400 [mask:linear-gradient(to_bottom,white,white,transparent)] [scrollbar-width:none] [-ms-overflow-style:none] [-webkit-overflow-scrolling:touch]"
+                    className="text-neutral-600 text-xs md:text-sm lg:text-base flex flex-col items-start gap-4 dark:text-neutral-400"
                   >
                     {typeof active.content === "function" ? active.content() : active.content}
                   </div>
@@ -193,116 +193,140 @@ export const CloseIcon = () => {
     </motion.svg>
   );
 };
-// ... (cards array remains unchanged)
+
+// Create completely separate card data for each learning module
 const cards = [
   {
-    description: "Lana Del Rey",
-    title: "Summertime Sadness",
-    src: "https://assets.aceternity.com/demos/lana-del-rey.jpeg",
-    ctaText: "Visit",
-    ctaLink: "https://ui.aceternity.com/templates",
+    description: "Fundamentals of Web Security",
+    title: "Web Security Basics",
+    src: "https://images.unsplash.com/photo-1563206767-5b18f218e8de?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2069&q=80",
+    ctaText: "Learn",
+    ctaLink: "https://owasp.org/www-project-top-ten/",
     content: () => {
       return (
-        <p>
-          Lana Del Rey, an iconic American singer-songwriter, is celebrated for
-          her melancholic and cinematic music style. Born Elizabeth Woolridge
-          Grant in New York City, she has captivated audiences worldwide with
-          her haunting voice and introspective lyrics. <br /> <br /> Her songs
-          often explore themes of tragic romance, glamour, and melancholia,
-          drawing inspiration from both contemporary and vintage pop culture.
-          With a career that has seen numerous critically acclaimed albums, Lana
-          Del Rey has established herself as a unique and influential figure in
-          the music industry, earning a dedicated fan base and numerous
-          accolades.
-        </p>
+        <div>
+          <p>
+            Web security basics are essential knowledge for anyone working with web applications. This comprehensive module covers the fundamental concepts, common vulnerabilities, and best practices for securing web applications.
+          </p>
+          <h4 className="font-bold mt-4 mb-2">Key Topics:</h4>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Understanding the HTTP protocol and its security implications</li>
+            <li>Common attack vectors (XSS, CSRF, SQL Injection)</li>
+            <li>The Same-Origin Policy and CORS</li>
+            <li>Authentication and Authorization fundamentals</li>
+            <li>Secure communication with HTTPS</li>
+            <li>Input validation and sanitization</li>
+            <li>Session management and cookies</li>
+          </ul>
+          <p className="mt-4">
+            By the end of this module, you'll have a solid understanding of the core principles that form the foundation of web security, enabling you to identify common vulnerabilities and implement appropriate protections.
+          </p>
+        </div>
       );
     },
   },
   {
-    description: "Babbu Maan",
-    title: "Mitran Di Chhatri",
-    src: "https://assets.aceternity.com/demos/babbu-maan.jpeg",
-    ctaText: "Visit",
-    ctaLink: "https://ui.aceternity.com/templates",
+    description: "Identify and prevent common attacks",
+    title: "Cross-Site Scripting (XSS) Defense",
+    src: "https://images.unsplash.com/photo-1510915228340-29c85a43dcfe?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+    ctaText: "Learn",
+    ctaLink: "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html",
     content: () => {
       return (
-        <p>
-          Babu Maan, a legendary Punjabi singer, is renowned for his soulful
-          voice and profound lyrics that resonate deeply with his audience. Born
-          in the village of Khant Maanpur in Punjab, India, he has become a
-          cultural icon in the Punjabi music industry. <br /> <br /> His songs
-          often reflect the struggles and triumphs of everyday life, capturing
-          the essence of Punjabi culture and traditions. With a career spanning
-          over two decades, Babu Maan has released numerous hit albums and
-          singles that have garnered him a massive fan following both in India
-          and abroad.
-        </p>
-      );
-    },
-  },
-
-  {
-    description: "Metallica",
-    title: "For Whom The Bell Tolls",
-    src: "https://assets.aceternity.com/demos/metallica.jpeg",
-    ctaText: "Visit",
-    ctaLink: "https://ui.aceternity.com/templates",
-    content: () => {
-      return (
-        <p>
-          Metallica, an iconic American heavy metal band, is renowned for their
-          powerful sound and intense performances that resonate deeply with
-          their audience. Formed in Los Angeles, California, they have become a
-          cultural icon in the heavy metal music industry. <br /> <br /> Their
-          songs often reflect themes of aggression, social issues, and personal
-          struggles, capturing the essence of the heavy metal genre. With a
-          career spanning over four decades, Metallica has released numerous hit
-          albums and singles that have garnered them a massive fan following
-          both in the United States and abroad.
-        </p>
+        <div>
+          <p>
+            Cross-Site Scripting (XSS) remains one of the most prevalent web application security vulnerabilities. This module provides in-depth knowledge on how to identify, prevent, and mitigate XSS attacks.
+          </p>
+          <h4 className="font-bold mt-4 mb-2">Types of XSS:</h4>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Reflected XSS:</strong> Malicious script comes from the current HTTP request</li>
+            <li><strong>Stored XSS:</strong> Malicious script is stored on the target server</li>
+            <li><strong>DOM-based XSS:</strong> Vulnerability exists in client-side code</li>
+          </ul>
+          <h4 className="font-bold mt-4 mb-2">Prevention Techniques:</h4>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Output encoding/escaping for different contexts (HTML, CSS, JavaScript, URLs)</li>
+            <li>Content Security Policy (CSP) implementation</li>
+            <li>Input validation and sanitization</li>
+            <li>HttpOnly and Secure cookie flags</li>
+            <li>Modern framework protections</li>
+          </ul>
+          <p className="mt-4">
+            This comprehensive guide will help you understand how attackers exploit XSS vulnerabilities and equip you with the knowledge to build robust defenses against these attacks.
+          </p>
+        </div>
       );
     },
   },
   {
-    description: "Led Zeppelin",
-    title: "Stairway To Heaven",
-    src: "https://assets.aceternity.com/demos/led-zeppelin.jpeg",
-    ctaText: "Visit",
-    ctaLink: "https://ui.aceternity.com/templates",
+    description: "Protect your databases from injection attacks",
+    title: "SQL Injection Prevention",
+    src: "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+    ctaText: "Learn",
+    ctaLink: "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html",
     content: () => {
       return (
-        <p>
-          Led Zeppelin, a legendary British rock band, is renowned for their
-          innovative sound and profound impact on the music industry. Formed in
-          London in 1968, they have become a cultural icon in the rock music
-          world. <br /> <br /> Their songs often reflect a blend of blues, hard
-          rock, and folk music, capturing the essence of the 1970s rock era.
-          With a career spanning over a decade, Led Zeppelin has released
-          numerous hit albums and singles that have garnered them a massive fan
-          following both in the United Kingdom and abroad.
-        </p>
+        <div>
+          <p>
+            SQL Injection attacks can lead to unauthorized data access, data theft, and even complete system compromise. This module focuses on understanding and preventing SQL injection vulnerabilities.
+          </p>
+          <h4 className="font-bold mt-4 mb-2">Key Concepts:</h4>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>How SQL injection attacks work</li>
+            <li>Different types of SQL injection (Error-based, Union-based, Blind, etc.)</li>
+            <li>Common injection points in web applications</li>
+          </ul>
+          <h4 className="font-bold mt-4 mb-2">Prevention Strategies:</h4>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Parameterized Queries:</strong> Using prepared statements with parameterized queries</li>
+            <li><strong>ORM Frameworks:</strong> Leveraging ORM frameworks that handle SQL safely</li>
+            <li><strong>Input Validation:</strong> Implementing strict input validation</li>
+            <li><strong>Stored Procedures:</strong> Using stored procedures with parameterized inputs</li>
+            <li><strong>Least Privilege:</strong> Applying principle of least privilege to database accounts</li>
+            <li><strong>WAF Protection:</strong> Implementing Web Application Firewall rules</li>
+          </ul>
+          <p className="mt-4">
+            By the end of this module, you'll understand how to identify SQL injection vulnerabilities in your code and implement proper defenses to protect your application's data.
+          </p>
+        </div>
       );
     },
   },
   {
-    description: "Mustafa Zahid",
-    title: "Toh Phir Aao",
-    src: "https://assets.aceternity.com/demos/toh-phir-aao.jpeg",
-    ctaText: "Visit",
-    ctaLink: "https://ui.aceternity.com/templates",
+    description: "Advanced security concepts and defensive programming",
+    title: "Secure Coding Practices",
+    src: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80",
+    ctaText: "Learn",
+    ctaLink: "https://owasp.org/www-project-secure-coding-practices-quick-reference-guide/",
     content: () => {
       return (
-        <p>
-          &quot;Aawarapan&quot;, a Bollywood movie starring Emraan Hashmi, is
-          renowned for its intense storyline and powerful performances. Directed
-          by Mohit Suri, the film has become a significant work in the Indian
-          film industry. <br /> <br /> The movie explores themes of love,
-          redemption, and sacrifice, capturing the essence of human emotions and
-          relationships. With a gripping narrative and memorable music,
-          &quot;Aawarapan&quot; has garnered a massive fan following both in
-          India and abroad, solidifying Emraan Hashmi&apos;s status as a
-          versatile actor.
-        </p>
+        <div>
+          <p>
+            Secure coding practices are essential for building robust and secure applications. This module covers advanced techniques and best practices that go beyond basic security knowledge.
+          </p>
+          <h4 className="font-bold mt-4 mb-2">Secure Coding Principles:</h4>
+          <ul className="list-disc pl-5 space-y-1">
+            <li><strong>Defense in Depth:</strong> Implementing multiple layers of security controls</li>
+            <li><strong>Fail Secure:</strong> Ensuring systems fail in a secure state</li>
+            <li><strong>Least Privilege:</strong> Providing only the minimum necessary access</li>
+            <li><strong>Separation of Duties:</strong> Dividing critical functions among different entities</li>
+            <li><strong>Economy of Mechanism:</strong> Keeping security implementations simple</li>
+            <li><strong>Complete Mediation:</strong> Checking every access to resources</li>
+          </ul>
+          <h4 className="font-bold mt-4 mb-2">Advanced Topics:</h4>
+          <ul className="list-disc pl-5 space-y-1">
+            <li>Secure API design patterns</li>
+            <li>Memory safety and buffer overflow prevention</li>
+            <li>Race condition identification and prevention</li>
+            <li>Cryptography best practices</li>
+            <li>Secure session management</li>
+            <li>Error handling and information leakage prevention</li>
+            <li>Secure configuration management</li>
+          </ul>
+          <p className="mt-4">
+            This module provides actionable guidelines for implementing security throughout the software development lifecycle, from requirements gathering to deployment and maintenance.
+          </p>
+        </div>
       );
     },
   },
